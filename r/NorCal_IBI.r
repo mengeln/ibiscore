@@ -1,6 +1,7 @@
 NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, FieldReplicate=F){
   starttime <- proc.time()
-  load("ibi.RData")
+  load("/data/ibi.RData")
+  require(plyr)
   ibi <- idata.frame(ibi)
   data <- IBIname_match(data=data, DistinctCode=DistinctCode)
   colnames(data)[which(colnames(data) == "FinalID")] <- "Taxa"

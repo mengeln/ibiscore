@@ -1,5 +1,6 @@
 SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, FieldReplicate=F){
-  load("ibi.RData")
+  load("/data/ibi.RData")
+  require(plyr)
   ibi <- idata.frame(ibi)
   starttime <- proc.time()
   data <- IBIname_match(data=data, DistinctCode=DistinctCode)
