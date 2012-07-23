@@ -17,10 +17,21 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
   ###Subsample down to 500###
   datalength <- length(data)
   print("Starting 20 iterations of rarification")
+  rarifydown <- function(data){unlist(sapply(unique(data$SampleID), function(sample){
+    v <- data[data$SampleID==sample, "BAResult"]
+    
+    if(sum(v)>=500){rrarefy(v, 500)} else
+    {v}
+  }
+  )
+  )
+  }
+  
   library(doParallel)
+  library(vegan)
   registerDoParallel()
-  rarificationresult <- foreach(i=1:20, .combine=cbind, .export="rarify") %dopar% {
-    rarify(inbug=data, sample.ID= "SampleID", abund ="Result", 500)$Result
+  rarificationresult <- foreach(i=1:20, .combine=cbind, .packages="vegan") %dopar% {
+    rarifydown(BayAreaBugs)
   }
   print("Rarification complete")
   data <- cbind(data, rarificationresult)
