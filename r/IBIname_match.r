@@ -2,10 +2,10 @@ IBIname_match <- function(data, DistinctCode=F){
   colnames(data)[which(colnames(data) == "FinalID")] <- "Taxa"
   colnames(data)[which(colnames(data) == "BAResult")] <- "Result"
   data <- data[which(!is.na(data$Result)), ]
-  load("/data/ibi.RData")
+  load("data/ibi.RData")
   require(plyr)
   ibi <- idata.frame(ibi)
-  load("/data/taxonomy.RData")
+  load("data/taxonomy.RData")
   taxonomy <- idata.frame(taxonomy)
   ###Convert FinalID to SAFIT1###
   data$SAFIT <- rep(NA, length(data$Taxa))
