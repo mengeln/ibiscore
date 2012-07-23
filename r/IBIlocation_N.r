@@ -5,7 +5,7 @@ IBIlocation_N <- function(points){ ###"points must be a data frame with columns 
   if(colnames(points)[1] != "StationCode")
   {print("First column must be 'StationCode'")
    stop}
-  load("/data/map2.RData")
+  load("/data/california.RData")
   require("rgdal")
   coordinates(points) <- ~Longitude + Latitude
   points@proj4string <- map2@proj4string
