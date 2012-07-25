@@ -31,7 +31,7 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
   library(vegan)
   registerDoParallel()
   rarificationresult <- foreach(i=1:20, .combine=cbind, .packages="vegan") %dopar% {
-    rarifydown(BayAreaBugs)
+    rarifydown(data)
   }
   print("Rarification complete")
   data <- cbind(data, rarificationresult)
