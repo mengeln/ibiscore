@@ -2,8 +2,6 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
   options(warn=-1)
   starttime <- proc.time()
   load(system.file("data", "ibi.RData", package ="ibiscore"))
-  require(plyr)
-  ibi <- idata.frame(ibi)
   data <- IBIname_match(data=data, DistinctCode=DistinctCode)
   colnames(data)[which(colnames(data) == "FinalID")] <- "Taxa"
   colnames(data)[which(colnames(data) == "BAResult")] <- "Result"
@@ -15,6 +13,10 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
   sample_count_flag[(which(total_count>=500))] <- "Adequate"
   sample_count_flag[(which(total_count < 500 & total_count >= 450))] <- "Within specifications"
   sample_count_flag[(which(total_count < 450))] <- "Inadequate"
+  ###Match Relevant Data###
+  data$tolerance <- ibi$MaxOfToleranceValue[match(data$Taxa, ibi$FinalID)]
+  data$feed <- ibi$FunctionalFeedingGroup[match(data$Taxa, ibi$FinalID)]
+  data$class <- ibi$Class[match(data$Taxa, ibi$FinalID)]
   ###Subsample down to 500###
   datalength <- length(data)
   print("Starting 20 iterations of rarification")
@@ -39,9 +41,7 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
   colnames(data)[(datalength + 1):(datalength + 20)]<- paste("Replicate", 1:20)
   ###Metrics set up####
   metrics <- as.data.frame(matrix(NA, nrow = length(unique(data$SampleID)), ncol = 140))
-  data$tolerance <- ibi$MaxOfToleranceValue[match(data$Taxa, ibi$FinalID)]
-  data$feed <- ibi$FunctionalFeedingGroup[match(data$Taxa, ibi$FinalID)]
-  data$class <- ibi$Class[match(data$Taxa, ibi$FinalID)]
+
   ###Number of Coleoptera taxa###
   for(i in 1:20){
     temp <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
