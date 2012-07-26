@@ -1,4 +1,5 @@
 SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, FieldReplicate=F){
+  options(warn = -1)
   load(system.file("data", "ibi.RData", package ="ibiscore"))
   require(plyr)
   ibi <- idata.frame(ibi)
@@ -36,63 +37,66 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
   print("Rarification complete")
   data <- cbind(data, rarificationresult)
   colnames(data)[(datalength + 1):(datalength + 20)]<- paste("Replicate", 1:20)
-  ###Number of Coleoptera taxa###
+  ###Metrics set up###
   metrics <- as.data.frame(matrix(NA, nrow = length(unique(data$SampleID)), ncol = 140))
+  data$tolerance <- ibi$MaxOfToleranceValue[match(data$Taxa, ibi$FinalID)]
+  data$CFCG <- ibi$FunctionalFeedingGroup[match(data$Taxa, ibi$FinalID)]
+  
+  ###Number of Coleoptera taxa###
   for(i in 1:20){
     temp <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                    function(d)sum(unique(d) %in% ibi$SAFIT[ibi$Order == "Coleoptera"]))
     metrics[[i]] <- temp[!is.na(temp)]
-  }
+  
   ###Numer of EPT taxa
-  for(i in 1:20){
+
     temp <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                    function(d)sum(unique(d) %in% ibi$SAFIT[ibi$Order %in% c("Ephemoptera", "Plecoptera", "Trichoptera")]))
     metrics[[i+20]] <- temp[!is.na(temp)]
-  }
+  
   ###Number of predator taxa###
-  for(i in 1:20){
+
     temp <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                    function(d)sum(unique(d) %in% ibi$SAFIT[ibi$FunctionalFeedingGroup == "P"]))
     metrics[[i+40]] <- temp[!is.na(temp)]
-  }
   ###Percent Non-Insect taxa###
-  for(i in 1:20){
+
     taxatotal <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0], function(d)length(unique(d)))
     insect <-  tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                       function(d)sum(unique(d) %in% ibi$SAFIT[ibi$Class != "Insecta"]))
     temp <- round(((taxatotal-insect)/taxatotal)*100)
     metrics[[i+60]] <- temp[!is.na(temp)]
-  }
+
   ###Percent tolerant taxa###
-  data$tolerance <- ibi$MaxOfToleranceValue[match(data$Taxa, ibi$FinalID)]
   
-  for(i in 1:20){
+
     toleranttotal <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0 & (!is.na(data$tolerance))], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0 & (!is.na(data$tolerance))], function(d)length(unique(d)))
     tol <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0 & (!is.na(data$tolerance))], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0 & (!is.na(data$tolerance))], 
                   function(d)sum(unique(d) %in% ibi$SAFIT[ibi$MaxOfToleranceValue >= 8]))
     temp <- round(100*(tol/toleranttotal))
     metrics[[i+80]] <- temp[!is.na(temp)]
-  }
+
   ###Percent Intolerant###
-  for(i in 1:20){
+
     toleranttotal2 <- tapply(data[data[[datalength + i]]>0 & (!is.na(data$tolerance)), datalength + i], as.character(data$SampleID[data[[datalength + i]]>0 & (!is.na(data$tolerance))]), sum)
     tol2 <- tapply(data[data[[datalength + i]]>0 , datalength + i], as.character(data$SampleID[data[[datalength + i]]>0]), 
                    function(d)sum(d[which(d <= 2)], na.rm=T))
     temp <- round(100*(tol2/toleranttotal2))
     metrics[[i+100]] <- temp[which(names(temp) != "")]
-  }
-  for(i in 101:120){
-    metrics[which(is.na(metrics[[i]])), i] <- 0
-  }
+
+
   ###Percent CF + CG individuals###
-  data$CFCG <- ibi$FunctionalFeedingGroup[match(data$Taxa, ibi$FinalID)]
-  for(i in 1:20){
+  
     feeders <- tapply(data[data[[datalength + i]]>0 & (data$CFCG != "NONE REPORTED"), datalength + i], data$SampleID[data[[datalength + i]]>0 & (data$CFCG != "NONE REPORTED")], sum)
     CFCG <- tapply(data[data[[datalength + i]]>0 & (data$CFCG %in% c("CG", "CF")), datalength + i], data$SampleID[data[[datalength + i]]>0 & (data$CFCG %in% c("CG", "CF"))], 
                    function(d)sum(d, na.rm=T))
     temp <- round(100*(CFCG/feeders))
     metrics[[i+120]] <- temp[!is.na(temp)]
   }
+    
+  for(i in 101:120){
+      metrics[which(is.na(metrics[[i]])), i] <- 0
+    }
   ###Identify Ecoregion###
   Ecoregion <- IBIlocation(locationinfo)
   data$Ecoregion <- Ecoregion[match(data$StationCode, names(Ecoregion))]
@@ -107,6 +111,7 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
   ###Convert metrics to scores###
   scores <- metrics
   ###Coleoptera scores###
+  
   for(i in 1:20){
     scores[scores[[i]]>=6, i] <- 10
     scores[scores[[i]]==5, i] <- 8
@@ -114,10 +119,10 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
     scores[scores[[i]]==3, i] <- 5
     scores[scores[[i]]==2, i] <- 4  
     scores[missing, i] <- NA
-  }
+  
   ###EPT scores###
-  options(warn = -1)
-  for(i in 1:20){
+  
+  
     scores[intersect(chap, which(scores[[i+20]]<=1)), i+20] <- 0
     scores[intersect(chap, which(scores[[i+20]]>1 & scores[[i+20]]<=3)), i+20] <- 1
     scores[intersect(chap, which(scores[[i+20]]==4)), i+20] <- 2
@@ -143,9 +148,9 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
     scores[intersect(mount, which(scores[[i+20]]>=19)), i+20] <- 10
     
     scores[missing, i+20] <- NA
-  }
+  
   ###Predators###
-  for(i in 1:20){
+  
     scores[scores[[i+40]]<=3, i+40] <- 0
     scores[scores[[i+40]]==4, i+40] <- 1
     scores[scores[[i+40]]==5, i+40] <- 2
@@ -159,9 +164,9 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
     scores[scores[[i+40]]>=13, i+40] <- 10 
     
     scores[missing, i+40] <- NA
-  }
+  
   ###Non-insect###
-  for(i in 1:20){
+  
     scores[scores[[i+60]]>=9 & scores[[i+60]]<=12, i+60] <- 9
     scores[scores[[i+60]]<=8, i+60] <- 10
     scores[scores[[i+60]]>= 47, i+60] <- 0
@@ -175,9 +180,9 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
     scores[scores[[i+60]]>=13 & scores[[i+60]]<=17, i+60] <- 8
     
     scores[missing, i+60] <- NA
-  }
+  
   ###Percent tolerant taxa###
-  for(i in 1:20){
+  
     scores[scores[[i+80]]>=5 & scores[[i+80]]<=8, i+80] <- 200
     scores[scores[[i+80]]>=9 & scores[[i+80]]<=12, i+80] <- 8
     scores[scores[[i+80]]==200, i+80] <- 9
@@ -194,10 +199,10 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
     
     scores[missing, i+80] <- NA
     
-  }
+  
   ###Percent Intolerant###
-  options(warn = -1)
-  for(i in 1:20){
+  
+  
     scores[intersect(chap, which(scores[[i+100]]==0)), i+100] <- 0
     scores[intersect(chap, which(scores[[i+100]]>=1 & scores[[i+100]]<=3)), i+100] <- 1
     scores[intersect(chap, which(scores[[i+100]]>=4 & scores[[i+100]]<=6)), i+100] <- 2
@@ -223,11 +228,10 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
     scores[intersect(mount, which(scores[[i+100]]>=42)), i+100] <- 10
     
     scores[missing, i+100] <- NA
-  }
+  
   
   ###CF+CG###
-  options(warn = -1)
-  for(i in 1:20){
+  
     scores[intersect(chap, which(scores[[i+120]]<60)), i+120] <- 10
     scores[intersect(chap, which(scores[[i+120]]>=97)), i+120] <- 0
     scores[intersect(chap, which(scores[[i+120]]>=93 & scores[[i+120]]<=96)), i+120] <- 1

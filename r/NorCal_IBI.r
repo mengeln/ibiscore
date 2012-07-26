@@ -1,4 +1,5 @@
 NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, FieldReplicate=F){
+  options(warn=-1)
   starttime <- proc.time()
   load(system.file("data", "ibi.RData", package ="ibiscore"))
   require(plyr)
@@ -36,73 +37,77 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
   print("Rarification complete")
   data <- cbind(data, rarificationresult)
   colnames(data)[(datalength + 1):(datalength + 20)]<- paste("Replicate", 1:20)
-  ###Number of Coleoptera taxa###
+  ###Metrics set up####
   metrics <- as.data.frame(matrix(NA, nrow = length(unique(data$SampleID)), ncol = 140))
+  data$tolerance <- ibi$MaxOfToleranceValue[match(data$Taxa, ibi$FinalID)]
+  data$feed <- ibi$FunctionalFeedingGroup[match(data$Taxa, ibi$FinalID)]
+  data$class <- ibi$Class[match(data$Taxa, ibi$FinalID)]
+  ###Number of Coleoptera taxa###
   for(i in 1:20){
     temp <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                    function(d)sum(unique(d) %in% ibi$SAFIT[ibi$Order == "Coleoptera"]))
     metrics[[i]] <- temp[!is.na(temp)]
-  }
+  
   ###Numer of EPT taxa
-  for(i in 1:20){
+  
     temp <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                    function(d)sum(unique(d) %in% ibi$SAFIT[ibi$Order %in% c("Ephemoptera", "Plecoptera", "Trichoptera")]))
     metrics[[i+20]] <- temp[!is.na(temp)]
-  }
+  
   ###Number of Diptera taxa###
-  for(i in 1:20){
+  
     temp <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                    function(d)sum(unique(d) %in% ibi$SAFIT[ibi$Order == "Diptera"]))
     metrics[[i+40]] <- temp[!is.na(temp)]
-  }
+  
   ###Percent predators###
-  for(i in 1:20){
+
     predatortotal <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0], function(d)length(unique(d)))
     predatorcount <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                             function(d)sum(unique(d) %in% ibi$SAFIT[ibi$FunctionalFeedingGroup == "P"]))
     temp <- round(((predatortotal-predatorcount)/predatortotal)*100)
     metrics[[i+60]] <- temp[!is.na(temp)]
-  }
+  
   ###Percent Non-Insect taxa###
-  for(i in 1:20){
+  
     taxatotal <- tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0], function(d)length(unique(d)))
     insect <-  tapply(data$SAFIT[data$distinct == "Distinct" & data[[datalength + i]]>0], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0],
                       function(d)sum(unique(d) %in% ibi$SAFIT[ibi$Class == "Insecta"]))
     temp <- round(((taxatotal-insect)/taxatotal)*100)
     metrics[[i+80]] <- temp[!is.na(temp)]
-  }
+  
   ###Percent Intolerant###
-  data$tolerance <- ibi$MaxOfToleranceValue[match(data$Taxa, ibi$FinalID)]
-  for(i in 1:20){
+  
+  
     toleranttotal2 <- tapply(data[data[[datalength + i]]>0 & (!is.na(data$tolerance)), datalength + i], as.character(data$SampleID[data[[datalength + i]]>0 & (!is.na(data$tolerance))]), sum)
     tol2 <- tapply(data[data[[datalength + i]]>0 , datalength + i], as.character(data$SampleID[data[[datalength + i]]>0]), 
                    function(d)sum(d[which(d <= 2)], na.rm=T))
     temp <- round(100*(tol2/toleranttotal2))
     temp <- temp[which(names(temp) != "")]
     metrics[[i+100]] <- temp
-  }
-  for(i in 101:120){
-    metrics[which(is.na(metrics[[i]])), i] <- 0
-  }
+  
+  
   ###Percent non-gastropod scraper###
-  data$feed <- ibi$FunctionalFeedingGroup[match(data$Taxa, ibi$FinalID)]
-  data$class <- ibi$Class[match(data$Taxa, ibi$FinalID)]
-  for(i in 1:20){
+  
+  
     scrapertotal <- tapply(data[data$distinct == "Distinct" & data[[datalength + i]]>0 & (data$feed != "NONE REPORTED"), datalength + i], data$SampleID[data$distinct == "Distinct" & data[[datalength + i]]>0 & (data$feed != "NONE REPORTED")], sum)
     scraper <- tapply(data[data[[datalength + i]]>0 & data$class != "Gastropoda" & data$feed == "SC", datalength + i], data$SampleID[data[[datalength + i]]>0 & data$class != "Gastropoda" & data$feed == "SC"], 
                       function(d)sum(d, na.rm=T))
     scraper[is.na(scraper)] <- 0
     temp <- round(100*(scraper/scrapertotal))
     metrics[[i+120]] <- temp[!is.na(temp)]
-  }
+  
   ###Percent shredder###
-  for(i in 1:20){
+  
     shredtotal <- tapply(data[data[[datalength + i]]>0 & (data$feed != "NONE REPORTED"), datalength + i], data$SampleID[data[[datalength + i]]>0 & (data$feed != "NONE REPORTED")], sum)
     shred <- tapply(data[data[[datalength + i]]>0 & data$feed == "SH", datalength + i], data$SampleID[data[[datalength + i]]>0 & data$feed == "SH"], 
                     function(d)sum(d, na.rm=T))
     shred[is.na(shred)] <- 0
     temp <- round(100*(shred/shredtotal))
     metrics[[i+140]] <- temp[!is.na(temp)]
+  }
+  for(i in 101:120){
+    metrics[which(is.na(metrics[[i]])), i] <- 0
   }
   ###Identify Ecoregion###
   Ecoregion <- IBIlocation_N(locationinfo)
@@ -118,6 +123,8 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
   dev.off()
   ###Convert metrics to scores###
   scores <- metrics
+  data$Watershed <- locationinfo$WSA_lm[match(data$StationCode, locationinfo$StationCode)]
+  Watershed <- tapply(data$Watershed, data$SampleID, unique)
   ###Coleoptera scores###
   for(i in 1:20){
     scores[intersect(chap, which(scores[[i]]>=8)), i] <- 10
@@ -133,10 +140,10 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
     scores[intersect(c(coast, klamath), which(scores[[i]]==3)), i] <- 5
     scores[intersect(c(coast, klamath), which(scores[[i]]==2)), i] <- 1
     scores[missing, i] <- NA
-  }
+  
   ###EPT scores###
-  options(warn = -1)
-  for(i in 1:20){
+  
+  
     scores[intersect(chap, which(scores[[i+20]]<=2)), i+20] <- 0
     scores[intersect(chap, which(scores[[i+20]]>=3 & scores[[i+20]]<=4)), i+20] <- 1
     scores[intersect(chap, which(scores[[i+20]]>=5 & scores[[i+20]]<=6)), i+20] <- 2
@@ -149,16 +156,15 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
     scores[intersect(chap, which(scores[[i+20]]>=19 & scores[[i+20]]<=20)), i+20] <- 9
     scores[intersect(chap, which(scores[[i+20]]>=21)), i+20] <- 10
     scores[missing, i+20] <- NA
-  }
+  
   
   ###Diptera###
-  for(i in 1:20){
+  
     scores[scores[[i+40]]>=10, i+40] <- 10 
     scores[missing, i+40] <- NA
-  }
+  
   ###Predator###
-  options(warn = -1)
-  for(i in 1:20){
+  
     scores[intersect(c(chap, coast), which(scores[[i+60]]<=1)), i+60] <- 0
     scores[intersect(c(chap, coast), which(scores[[i+60]]==2)), i+60] <- 1
     scores[intersect(c(chap, coast), which(scores[[i+60]]>=3 & scores[[i+60]]<=4)), i+60] <- 2
@@ -183,10 +189,9 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
     scores[intersect(klamath, which(scores[[i+60]]>=19 & scores[[i+60]]<=21)), i+60] <- 9
     scores[intersect(klamath, which(scores[[i+60]]>=22)), i+60] <- 10
     
-    scores[missing, i+60] <- NA
-  }
+    
   ###Non-insect###
-  for(i in 1:20){
+  
     scores[scores[[i+80]]>=8 & scores[[i+80]]<=13, i+80] <- 9
     scores[scores[[i+80]]<=7, i+80] <- 10
     scores[scores[[i+80]]>= 57, i+80] <- 0
@@ -199,12 +204,11 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
     scores[scores[[i+80]]>=19 & scores[[i+80]]<=24, i+80] <- 7
     scores[scores[[i+80]]>=14 & scores[[i+80]]<=18, i+80] <- 8 
     scores[missing, i+80] <- NA
-  }
+  
   ###Percent Intolerant###
-  options(warn = -1)
-  data$Watershed <- sapply(1:length(data$StationCode), function(i)locationinfo$WSA_lm[locationinfo$StationCode == data$StationCode[i]])
-  Watershed <- tapply(data$Watershed, data$SampleID, unique)
-  for(i in 1:20){
+  
+  
+  
     scores[, i+100] <- sapply(1:length(Watershed), function(j)(scores[j, i+100] - (-0.089*log10(Watershed[j])+0.433)+0.296))
     scores[intersect(chap, which(scores[[i+100]]< -4)), i+100] <- 0
     scores[intersect(chap, which(scores[[i+100]]>=-4 & scores[[i+100]]<=0)), i+100] <- 1
@@ -231,10 +235,9 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
     scores[intersect(c(coast, klamath), which(scores[[i+100]]>=41)), i+100] <- 10
     
     scores[missing, i+100] <- NA
-  }
+  
   ###Non-gastropod scrapers###
-  options(warn = -1)
-  for(i in 1:20){
+  
     scores[intersect(c(chap, klamath), which(scores[[i+120]]>=1 & scores[[i+120]]<=2)), i+120] <- 1
     scores[intersect(c(chap, klamath), which(scores[[i+120]]>=3 & scores[[i+120]]<=4)), i+120] <- 2
     scores[intersect(c(chap, klamath), which(scores[[i+120]]>=5 & scores[[i+120]]<=6)), i+120] <- 3
@@ -259,10 +262,9 @@ NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F,
     scores[intersect(coast, which(scores[[i+120]]>=41)), i+120] <- 10
     
     scores[missing, i+120] <- NA
-  }
+  
   ###shredder###
-  options(warn = -1)
-  for(i in 1:20){
+  
     scores[intersect(c(chap, klamath), which(scores[[i+140]]<= 1)), i+140] <- 0
     scores[intersect(c(chap, klamath), which(scores[[i+140]]==2)), i+140] <- 1
     scores[intersect(c(chap, klamath), which(scores[[i+140]]>=3 & scores[[i+140]]<=4)), i+140] <- 2

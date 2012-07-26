@@ -5,7 +5,7 @@ IBIname_match <- function(data, DistinctCode=F){
   load(system.file("data", "ibi.RData", package ="ibiscore"))
   require(plyr)
   ibi <- idata.frame(ibi)
-  load(system.file("data", "data/taxonomy.RData", package ="ibiscore"))
+  load(system.file("data", "taxonomy.RData", package ="ibiscore"))
   taxonomy <- idata.frame(taxonomy)
   ###Convert FinalID to SAFIT1###
   data$SAFIT <- rep(NA, length(data$Taxa))

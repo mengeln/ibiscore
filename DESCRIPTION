@@ -8,4 +8,4 @@ Maintainer: MWEngeln <marke@sccwrp.org>
 Description: Produces IBI scores for nothern and southern California
 License: 
 Depends: R (>= 1.8.0)
-Import: rgdal, ggmap, maptools, ggplot2, gpclib, plyr, doParallel
+Import: rgdal, ggmap, maptools, ggplot2, gpclib, plyr, doParallel, vegan
