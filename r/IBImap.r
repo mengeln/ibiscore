@@ -12,11 +12,11 @@ IBImap <- function(locationinfo, data, attribute, type="Ecoregion", zone){
   datalocation$lat <- unlist(datalocation$lat)
   if(zone == "SoCal"){
     #testmap <- get_googlemap(center = c(lon= -118, lat=33.7), maptype="satellite", crop=T, style="feature:road|element:all|visibility:off", zoom=8)
-    load("data/SoCal_basemap.RData")
+    load(system.file("data", "SoCal_basemap.RData", package ="ibiscore"))
   }
   if(zone == "NorCal"){
     #testmap <- get_googlemap(center = c(lon= -122.454285, lat=40.501269), maptype="satellite", crop=T, style="feature:road|element:all|visibility:off", zoom=7)
-    load("data/NorCal_basemap.RData")
+    load(system.file("data", "NorCal_basemap.RData", package ="ibiscore"))
   }
   if(type == "Ecoregion"){
     ibimap <- ggmap(testmap) + geom_point(aes(x=lon, y=lat, colour=attribute), data=datalocation) +

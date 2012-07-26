@@ -1,6 +1,6 @@
 NorCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, FieldReplicate=F){
   starttime <- proc.time()
-  load("data/ibi.RData")
+  load(system.file("data", "ibi.RData", package ="ibiscore"))
   require(plyr)
   ibi <- idata.frame(ibi)
   data <- IBIname_match(data=data, DistinctCode=DistinctCode)

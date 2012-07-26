@@ -1,5 +1,5 @@
 SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, FieldReplicate=F){
-  load("data/ibi.RData")
+  load(system.file("data", "ibi.RData", package ="ibiscore"))
   require(plyr)
   ibi <- idata.frame(ibi)
   starttime <- proc.time()
