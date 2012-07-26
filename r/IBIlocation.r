@@ -8,8 +8,8 @@ IBIlocation <- function(points){ ###"points must be a data frame with columns St
   load(system.file("data", "california.RData", package ="ibiscore"))
   require("rgdal")
   coordinates(points) <- ~Longitude + Latitude
-  points@proj4string <- map@proj4string
-  zone <- cbind(points@data$StationCode, over(points, map))                                   
+  points@proj4string <- california@proj4string
+  zone <- cbind(points@data$StationCode, over(points, california))                                   
   colnames(zone)[1] <- "StationCode"
   zone$LEVEL3_NAM <- as.character(zone$LEVEL3_NAM)
   zone$LEVEL3_NAM[which(is.na(zone$LEVEL3_NAM))] <- "No match"
