@@ -19,7 +19,7 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
   datalength <- length(data)
   print("Starting 20 iterations of rarification")
   rarifydown <- function(data){unlist(sapply(unique(data$SampleID), function(sample){
-    v <- data[data$SampleID==sample, "BAResult"]
+    v <- data[data$SampleID==sample, "Result"]
     
     if(sum(v)>=500){rrarefy(v, 500)} else
     {v}
@@ -28,8 +28,8 @@ SoCal_IBI <- function(locationinfo, data, DistinctCode=F, Grid=F, SampleDate=F, 
   )
   }
   
-  library(doParallel)
-  library(vegan)
+  require(doParallel)
+  require(vegan)
   registerDoParallel()
   rarificationresult <- foreach(i=1:20, .combine=cbind, .packages="vegan") %dopar% {
     rarifydown(data)
