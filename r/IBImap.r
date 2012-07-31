@@ -1,4 +1,5 @@
 IBImap <- function(locationinfo, data, attribute, type="Ecoregion", zone){
+  library(gpclib)
   library(ggmap)
   datalocation <- unique(data[, c("StationCode", "SampleID")])
   datalocation$attribute <- sapply(1:length(datalocation$StationCode), function(i)attribute[which(names(attribute)==datalocation$StationCode[i])])

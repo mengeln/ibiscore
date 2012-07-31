@@ -1,11 +1,11 @@
 Package: ibiscore
 Type: Package
 Title: IBI scoring
-Version: 0.3
+Version: 0.4
 Date: 2012-07-17
 Author: MWEngeln
 Maintainer: MWEngeln <marke@sccwrp.org>
 Description: Produces IBI scores for nothern and southern California
 License: 
-Depends: R (>= 1.8.0)
+Depends: R (>= 1.8.0), rgdal, ggmap, maptools, ggplot2, gpclib, plyr, doParallel, vegan
 Import: rgdal, ggmap, maptools, ggplot2, gpclib, plyr, doParallel, vegan
